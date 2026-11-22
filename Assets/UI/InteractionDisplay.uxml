@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="InteractionDisplay.uss" />
+  <ui:VisualElement name="root" class="center-container">
+    <ui:VisualElement name="cursor-dot" class="cursor-dot" />
+    <ui:Label name="interaction-label" class="interaction-text" text="" />
+  </ui:VisualElement>
+</ui:UXML>
