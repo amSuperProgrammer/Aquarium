@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float sensitivity = 2f;
     Rigidbody rb;
 
+    Vector2 smoothDelta;
     float pitch;
 
     // Метод для автоматического назначения ссылок из CameraHierarchySetup
@@ -48,12 +49,13 @@ public class PlayerController : MonoBehaviour
         if (cameraPivot == null || cameraLens == null) return;
 
         Vector2 delta = Mouse.current.delta.ReadValue() * sensitivity;
+        smoothDelta = Vector2.Lerp(smoothDelta, delta, 1f - Mathf.Exp(-20f * Time.unscaledDeltaTime));
 
         // Горизонталь — вращаем пивот вокруг глобального Up
-        cameraPivot.Rotate(Vector3.up * delta.x);
+        cameraPivot.Rotate(Vector3.up * smoothDelta.x);
 
         // Вертикаль — вращаем линзу локально вокруг оси X
-        pitch -= delta.y;
+        pitch -= smoothDelta.y;
         pitch = Mathf.Clamp(pitch, -80f, 80f);
         cameraLens.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
