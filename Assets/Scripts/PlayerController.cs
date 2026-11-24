@@ -8,7 +8,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] InputActionReference move;
     [SerializeField] float speed = 5f;
     [SerializeField] float sensitivity = 2f;
-    Rigidbody rb;
+
+    CharacterController controller;
 
     Vector2 smoothDelta;
     float pitch;
@@ -26,8 +27,7 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
+        controller = GetComponent<CharacterController>();
 
         // Если ссылки не назначены вручную — пробуем найти автоматически
         if (cameraPivot == null)
@@ -60,12 +60,8 @@ public class PlayerController : MonoBehaviour
         cameraLens.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        // Сбрасываем боковую скорость — чтобы стены и другие объекты не толкали нас
-        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
-
-        // Физика и движение тела только в FixedUpdate
         Vector3 forward = cameraPivot.forward;
         Vector3 right = cameraPivot.right;
         // Убираем наклон по вертикали — игрок ходит только по горизонтали
@@ -77,6 +73,6 @@ public class PlayerController : MonoBehaviour
         Vector2 input = move.action.ReadValue<Vector2>();
         Vector3 velocity = (forward * input.y + right * input.x) * speed;
 
-        rb.MovePosition(rb.position + velocity * Time.fixedDeltaTime);
+        controller.Move(velocity * Time.deltaTime);
     }
 }
