@@ -3,43 +3,67 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] Transform cameraTransform;
+    [SerializeField] Transform cameraPivot;
+    [SerializeField] Transform cameraLens;
     [SerializeField] InputActionReference move;
     [SerializeField] float speed = 5f;
-    [SerializeField] float sensitivity = 5f;
-    Rigidbody rb;
+    [SerializeField] float sensitivity = 2f;
 
+    CharacterController controller;
+
+    Vector2 smoothDelta;
     float pitch;
+
+    // Метод для автоматического назначения ссылок из CameraHierarchySetup
+    public void AssignCameraTransforms(Transform pivot, Transform lens)
+    {
+        cameraPivot = pivot;
+        cameraLens = lens;
+    }
 
     void Start()
     {
         move.action.Enable();
         Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
 
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
+        controller = GetComponent<CharacterController>();
+
+        // Если ссылки не назначены вручную — пробуем найти автоматически
+        if (cameraPivot == null)
+        {
+            var pivot = transform.Find("CameraPivot");
+            if (pivot != null)
+                cameraPivot = pivot;
+        }
+        if (cameraLens == null)
+        {
+            var cam = GetComponentInChildren<Camera>(true);
+            if (cam != null)
+                cameraLens = cam.transform;
+        }
     }
 
     void LateUpdate()
     {
-        // Поворот камеры обрабатываем в LateUpdate, чтобы он следовал за движением
-        Vector2 delta = Mouse.current.delta.ReadValue() * sensitivity * Time.deltaTime;
-        cameraTransform.Rotate(Vector3.up * delta.x);
+        if (cameraPivot == null || cameraLens == null) return;
 
-        Vector3 euler = cameraTransform.rotation.eulerAngles;
-        pitch -= delta.y;
-        pitch = Mathf.Clamp(pitch, -80, 80);
-        cameraTransform.localRotation = Quaternion.Euler(pitch, euler.y, 0);
+        Vector2 delta = Mouse.current.delta.ReadValue() * sensitivity;
+        smoothDelta = Vector2.Lerp(smoothDelta, delta, 1f - Mathf.Exp(-20f * Time.unscaledDeltaTime));
+
+        // Горизонталь — вращаем пивот вокруг глобального Up
+        cameraPivot.Rotate(Vector3.up * smoothDelta.x);
+
+        // Вертикаль — вращаем линзу локально вокруг оси X
+        pitch -= smoothDelta.y;
+        pitch = Mathf.Clamp(pitch, -80f, 80f);
+        cameraLens.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        // Сбрасываем боковую скорость — чтобы стены и другие объекты не толкали нас
-        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
-
-        // Физика и движение тела только в FixedUpdate
-        Vector3 forward = cameraTransform.forward;
-        Vector3 right = cameraTransform.right;
+        Vector3 forward = cameraPivot.forward;
+        Vector3 right = cameraPivot.right;
         // Убираем наклон по вертикали — игрок ходит только по горизонтали
         forward.y = 0f;
         right.y = 0f;
@@ -49,6 +73,6 @@ public class PlayerController : MonoBehaviour
         Vector2 input = move.action.ReadValue<Vector2>();
         Vector3 velocity = (forward * input.y + right * input.x) * speed;
 
-        rb.MovePosition(rb.position + velocity * Time.fixedDeltaTime);
+        controller.Move(velocity * Time.deltaTime);
     }
 }
