@@ -11,13 +11,21 @@ public class Gramophone : MonoBehaviour, IInteractable
     private AudioSource audioSource;
     private int currentTrackIndex = -1;
 
-    void Awake()
+    void Start()
     {
         audioSource = GetComponent<AudioSource>();
 
-        // Настройки по умолчанию для граммофона
+        // 配置音频源：不自动播放（由我们控制），循环关闭
         audioSource.playOnAwake = false;
-        audioSource.loop = false; // Мы сами меняем треки
+        audioSource.loop = false;
+
+        // 场景加载完成后立即开始播放第一首音乐
+        if (tracks != null && tracks.Length > 0)
+        {
+            currentTrackIndex = 0;
+            audioSource.clip = tracks[currentTrackIndex];
+            audioSource.Play();
+        }
     }
 
     public void Interact()
